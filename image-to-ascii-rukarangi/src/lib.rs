@@ -1,5 +1,6 @@
 mod utils;
 mod filters;
+mod parser;
 
 #[cfg(test)]
 mod tests {
@@ -31,24 +32,35 @@ pub fn greet() {
 
 #[wasm_bindgen(js_name = toAscii)]
 pub fn to_ascii(data: Vec<u8>) {
-    log("function being used!");
-    log(&format!("{}", data[0])[..]);
+    if data.len() > 20 {
+        log("function being used!");
+        log_list(data, 16);
+    }
+}
+
+fn log_list(data: Vec<u8>, length: usize) {
+    for i in 0..length{
+        log(&format!("{:X?}", data[i])[..]);
+    }
 }
 
 #[wasm_bindgen]
 pub struct Converter {
     result: String,
-    data: Vec<u8>
+    data: Vec<u8>,
+    png: parser::PngImage,
 }
 
 #[wasm_bindgen]
 impl Converter {
     pub fn new(data: Vec<u8>) -> Converter {
         let result = String::from("");
-        
+        let png = parser::new_empty();
+
         Converter {
             result,
-            data
+            data,
+            png,
         }
     }
 }
