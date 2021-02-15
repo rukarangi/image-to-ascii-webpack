@@ -6,13 +6,13 @@ pub const IHDR: [u8; 4] = [0x49, 0x48, 0x44, 0x52];
 // }
 
 pub struct IhdrChunk {
-    width: [u8; 4],
-    height: [u8; 4],
-    depth: [u8; 1],
-    color_type: [u8; 1],
-    compression: [u8; 1],
-    filter: [u8; 1],
-    interlaced: [u8; 1],
+    pub width: [u8; 4],
+    pub height: [u8; 4],
+    pub depth: [u8; 1],
+    pub color_type: [u8; 1],
+    pub compression: [u8; 1],
+    pub filter: [u8; 1],
+    pub interlaced: [u8; 1],
 }
 
 impl IhdrChunk {
@@ -48,16 +48,16 @@ impl IhdrChunk {
 }
 
 pub struct Chunk {
-    length: [u8; 4],
-    type_: [u8; 4],
-    data: Vec<u8>,
-    crc: [u8; 4]
+    pub length: [u8; 4],
+    pub type_: [u8; 4],
+    pub data: Vec<u8>,
+    pub crc: [u8; 4]
 }
 
 pub struct PngImage {
-    header: [u8; 8],
-    ihdr: IhdrChunk,
-    chunks: Vec<Chunk>,
+    pub header: [u8; 8],
+    pub ihdr: IhdrChunk,
+    pub chunks: Vec<Chunk>,
 }
 
 impl PngImage {

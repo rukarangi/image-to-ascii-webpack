@@ -62,9 +62,26 @@ impl Converter {
             first_eight[i] = data[i];
         }
 
+        let mut index: usize = 0;
+        for (idx, byte) in data.iter().enumerate() {
+            let mut four: [u8; 4] = [0; 4];
+            for i in 0..4 {
+                four[i] = data[i + idx];
+            }
+
+            if four == parser::IHDR {
+                index = idx + 4;
+                log(&format!("{}", index));
+                break;
+            }
+        }
+
+
+        // let test_index = self.find_pattern(parser::IHDR.to_vec());
+
         let mut first_thirteen: [u8; 13] = [0; 13];
-        for i in 8..13 {
-            first_thirteen[i] = data[i];
+        for i in 0..13 {
+            first_thirteen[i] = data[i+16];
         }
 
         let ihdr: parser::IhdrChunk = parser::IhdrChunk::build(first_thirteen); 
@@ -83,6 +100,51 @@ impl Converter {
             data,
             png: new_png,
         };
+    }
+
+    pub fn populate_ihdr(&mut self) {
+        let index = self.find_pattern(parser::IHDR.to_vec());
+        let mut ihdr_bytes: [u8; 13] = [0; 13];
+        for i in 0..13 {
+            ihdr_bytes[i] = self.data[i+index];
+        }
+        let ihdr = parser::IhdrChunk::build(ihdr_bytes);
+        self.png = parser::PngImage::new(ihdr);
+    }
+
+    pub fn display_head(&self) {
+        log(&format!("Head Information:", )[..]);
+        log(&format!("width: {:X?}", self.png.ihdr.width)[..]);
+        log(&format!("height: {:X?}", self.png.ihdr.height)[..]);
+        log(&format!("depth: {:X?}", self.png.ihdr.depth)[..]);
+        log(&format!("color_type: {:X?}", self.png.ihdr.color_type)[..]);
+        log(&format!("compression: {:X?}", self.png.ihdr.compression)[..]);
+        log(&format!("filter: {:X?}", self.png.ihdr.filter)[..]);
+        log(&format!("interlaced: {:X?}", self.png.ihdr.interlaced)[..]);
+    }
+
+    pub fn test_pattern(&self) {
+        self.find_pattern(parser::IHDR.to_vec());
+    }
+
+    pub fn find_pattern(&self, pattern: Vec<u8>) -> usize {
+        let mut index: usize = 0;
+
+        for (idx, byte) in self.data.iter().enumerate() {
+            let mut four: [u8; 4] = [0; 4];
+            for i in 0..4 {
+                four[i] = self.data[i + idx];
+            }
+
+            if four.to_vec() == pattern {
+                index = idx + 4;
+                log(&format!("{}", index));
+                break;
+            }
+        }
+        
+        //log(&format!("{}", index)[..]);
+        return index;
     }
 }
 
