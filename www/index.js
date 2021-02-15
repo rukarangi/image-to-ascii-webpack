@@ -28,9 +28,12 @@ function readFile(input) {
 
         let string = new TextDecoder("utf-8").decode(newData)
         display.textContent = string
-        converter.display_head()
+        //console.log(string)
+
         converter.test_pattern()
         converter.populate_ihdr()
+        converter.display_head()
+        converter.find_idat()
 
     }
 

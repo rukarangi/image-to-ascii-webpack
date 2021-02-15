@@ -11,6 +11,8 @@ mod tests {
 }
 
 use wasm_bindgen::prelude::*;
+use inflate::inflate_bytes_zlib;
+
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -61,35 +63,8 @@ impl Converter {
         for i in 0..8 {
             first_eight[i] = data[i];
         }
-
-        let mut index: usize = 0;
-        for (idx, byte) in data.iter().enumerate() {
-            let mut four: [u8; 4] = [0; 4];
-            for i in 0..4 {
-                four[i] = data[i + idx];
-            }
-
-            if four == parser::IHDR {
-                index = idx + 4;
-                log(&format!("{}", index));
-                break;
-            }
-        }
-
-
-        // let test_index = self.find_pattern(parser::IHDR.to_vec());
-
-        let mut first_thirteen: [u8; 13] = [0; 13];
-        for i in 0..13 {
-            first_thirteen[i] = data[i+16];
-        }
-
-        let ihdr: parser::IhdrChunk = parser::IhdrChunk::build(first_thirteen); 
-
-        let new_png = parser::PngImage::new(ihdr);
-
-       
-
+        
+        
         if first_eight == parser::PNG {
             log("file is png");
         } else {
@@ -98,7 +73,7 @@ impl Converter {
         return Converter {
             result,
             data,
-            png: new_png,
+            png: png,
         };
     }
 
@@ -108,8 +83,32 @@ impl Converter {
         for i in 0..13 {
             ihdr_bytes[i] = self.data[i+index];
         }
+        log(&format!("{:X?}", ihdr_bytes)[..]);
         let ihdr = parser::IhdrChunk::build(ihdr_bytes);
-        self.png = parser::PngImage::new(ihdr);
+        self.png.ihdr = ihdr;
+    }
+
+    pub fn find_idat(&self) {
+        let index = self.find_pattern(parser::IDAT.to_vec());
+        log(&format!("found idat index: {:X?}", index)[..]);
+
+        let slice = &self.data[(index-4)..(index)];
+        log(&format!("length bytes: {:X?} Idat: {:X}", slice, self.data[index]));
+
+        let mut idat_bytes: Vec<u8> = Vec::<u8>::new();
+        let length: u32 = as_u32_be(slice);
+        log(&format!("found idat length: {}", length)[..]);
+
+        let mut count = 0;
+        loop {
+            count += 1;
+            idat_bytes.push(self.data[count+index]);
+            if count == length as usize {
+                log("pushed to bytes");
+                break;
+            }
+        }
+        log(&format!("{:X?}", idat_bytes)[..]);
     }
 
     pub fn display_head(&self) {
@@ -121,6 +120,7 @@ impl Converter {
         log(&format!("compression: {:X?}", self.png.ihdr.compression)[..]);
         log(&format!("filter: {:X?}", self.png.ihdr.filter)[..]);
         log(&format!("interlaced: {:X?}", self.png.ihdr.interlaced)[..]);
+        log(&format!("total byte length: {:X?}", self.data.len()));
     }
 
     pub fn test_pattern(&self) {
@@ -146,6 +146,24 @@ impl Converter {
         //log(&format!("{}", index)[..]);
         return index;
     }
+}
+
+fn as_u32_be(slice: &[u8]) -> u32 {
+    let array: [u8; 4] = [slice[0],slice[1],slice[2],slice[3]];
+    log("converting slice to array");
+    return ((array[0] as u32) << 24) +
+    ((array[1] as u32) << 16) +
+    ((array[2] as u32) <<  8) +
+    ((array[3] as u32) <<  0);
+}
+
+fn as_u32_le(slice: &[u8]) -> u32 {
+    let array: [u8; 4] = [slice[0],slice[1],slice[2],slice[3]];
+
+    return ((array[0] as u32) <<  0) +
+    ((array[1] as u32) <<  8) +
+    ((array[2] as u32) << 16) +
+    ((array[3] as u32) << 24);
 }
 
 /*

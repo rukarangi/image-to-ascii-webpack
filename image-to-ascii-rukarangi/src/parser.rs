@@ -1,5 +1,8 @@
 pub const PNG: [u8; 8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 pub const IHDR: [u8; 4] = [0x49, 0x48, 0x44, 0x52];
+pub const IDAT: [u8; 4] = [0x49, 0x44, 0x41, 0x54];
+
+use inflate::inflate_bytes_zlib;
 
 // fn slice_to_array(slice: &[u8]) -> [u8] {
     
@@ -53,6 +56,13 @@ pub struct Chunk {
     pub data: Vec<u8>,
     pub crc: [u8; 4]
 }
+
+// impl Chunk {
+//     // pub fn build_idat(data: Vec<u8>) -> Chunk {
+//     //     let clone = data.clone();
+//     // }
+// }
+
 
 pub struct PngImage {
     pub header: [u8; 8],
