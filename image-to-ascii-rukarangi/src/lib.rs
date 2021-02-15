@@ -55,13 +55,34 @@ pub struct Converter {
 impl Converter {
     pub fn new(data: Vec<u8>) -> Converter {
         let result = String::from("");
-        let png = parser::new_empty();
+        let png = parser::PngImage::new_empty();
 
-        Converter {
+        let mut first_eight: [u8; 8] = [0,0,0,0,0,0,0,0];
+        for i in 0..8 {
+            first_eight[i] = data[i];
+        }
+
+        let mut first_thirteen: [u8; 13] = [0; 13];
+        for i in 8..13 {
+            first_thirteen[i] = data[i];
+        }
+
+        let ihdr: parser::IhdrChunk = parser::IhdrChunk::build(first_thirteen); 
+
+        let new_png = parser::PngImage::new(ihdr);
+
+       
+
+        if first_eight == parser::PNG {
+            log("file is png");
+        } else {
+            log("file is missing png header");
+        }
+        return Converter {
             result,
             data,
-            png,
-        }
+            png: new_png,
+        };
     }
 }
 

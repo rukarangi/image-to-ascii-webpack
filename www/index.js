@@ -23,6 +23,7 @@ function readFile(input) {
 
         let newData = new Uint8Array(bytes)
         wasm.toAscii(newData)
+        let converter = wasm.Converter.new(newData)
 
     }
 
