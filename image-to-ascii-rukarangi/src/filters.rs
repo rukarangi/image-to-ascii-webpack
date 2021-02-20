@@ -58,6 +58,22 @@ pub fn grayscale_basic(rgb: (f64, f64, f64), reverse: bool) -> char {
     return filter(average, grayscale);
 }
 
+pub fn grayscale_basic_test(gray: f64, reverse: bool) -> char {
+    let grayscale_default: Vec<char> = vec![' ','.',':','-','=','+','*','#','%','@'];
+    let grayscale: Vec<char>;
+
+    let average = gray;
+
+    // reverse vector of characters if chosen
+    if reverse {
+        grayscale = grayscale_default.into_iter().rev().collect();
+    } else {
+        grayscale = grayscale_default;
+    }
+
+    return filter(average, grayscale);
+}
+
 pub fn grayscale_detailed(rgb: (f64, f64, f64), reverse: bool) -> char {
     let grayscale_default: Vec<char> = vec!['$','@','B','%','8','&','W','M','#','*','o','a','h','k','b','d','p','q','w','m','Z','O','0','Q','L','C','J','U','Y','X','z','c','v','u','n','x','r','j','f','t','/','|','(',')','1','{','}','[',']','?','-','_','+','~','<','>','i','!','l','I',';',':',',','^','`','.',',',' '];
     let grayscale: Vec<char>;

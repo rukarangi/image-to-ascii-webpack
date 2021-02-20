@@ -1,3 +1,5 @@
+extern crate console_error_panic_hook;
+
 mod utils;
 mod filters;
 mod parser;
@@ -12,13 +14,32 @@ mod tests {
 
 use wasm_bindgen::prelude::*;
 use inflate::inflate_bytes_zlib;
+use std::io::Write;
+use std::str::from_utf8;
+use std::panic;
 
+
+
+//init_panic();
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+// pub fn set_panic_hook() {
+//     // When the `console_error_panic_hook` feature is enabled, we can call the
+//     // `set_panic_hook` function at least once during initialization, and then
+//     // we will get better error messages if our code ever panics.
+//     //
+//     // For more details see
+//     // https://github.com/rustwasm/console_error_panic_hook#readme
+// #[cfg(feature = "console_error_panic_hook")]
+// console_error_panic_hook::set_once!();
+// }
+
+//set_panic_hook();
 
 #[wasm_bindgen]
 extern {
@@ -28,40 +49,118 @@ extern {
 }
 
 #[wasm_bindgen]
+pub fn init_panic() {
+    panic::set_hook(Box::new(console_error_panic_hook::hook));
+}
+
+#[wasm_bindgen]
 pub fn greet() {
     log("Hello, image-to-ascii!");
 }
 
 #[wasm_bindgen(js_name = toAscii)]
-pub fn to_ascii(data: Vec<u8>) {
-    if data.len() > 20 {
+pub fn to_ascii(data_raw: Vec<u8>) {
+    if data_raw.len() > 20 {
         log("function being used!");
-        log_list(data, 16);
+        log_list(data_raw, 16);
     }
 }
 
-fn log_list(data: Vec<u8>, length: usize) {
+fn log_list(data_raw: Vec<u8>, length: usize) {
     for i in 0..length{
-        log(&format!("{:X?}", data[i])[..]);
+        log(&format!("{:X?}", data_raw[i])[..]);
     }
 }
 
 #[wasm_bindgen]
 pub struct Converter {
     result: String,
-    data: Vec<u8>,
+    data_raw: Vec<u8>,
+    data_decoded: Vec<u8>,
     png: parser::PngImage,
 }
 
 #[wasm_bindgen]
 impl Converter {
-    pub fn new(data: Vec<u8>) -> Converter {
+    pub fn filter(&mut self, y_modifier: u32, x_modifier: u32) -> String {
+
+        log(&format!("{:X?}", self.data_decoded.len()));
+
+        let mut new_result = String::from("");
+
+        let mut last: u8 = 0;
+        let mut column: u32 = 0;
+        let mut row: u32 = 0;
+
+        for (idx, value) in self.data_decoded.iter().enumerate() {
+            if last != *value {
+                //log(&format!("{:?}", value));
+            }
+            last = *value;
+            if column % x_modifier == 0 && row % y_modifier == 0 {
+                let chara = filters::grayscale_basic_test(*value as f64, true);
+                new_result.push(chara);
+            }
+            column += 1;
+            if *value == 0 {
+                new_result.push_str("\n");
+                column = 0;
+                row += 1;
+            }
+        }
+
+        // let mut row = 1;
+        // let mut column = 1;
+        // let width = as_u32_be(&self.png.ihdr.width[..]);
+
+        // for (idx, value_1) in self.data_decoded.iter().enumerate() {
+        //     let value: f64 = *value_1 as f64;
+            
+            
+        //     row = idx as u32 - ((column as f64 / width as f64).floor() as u32 * width);
+        //     log(&format!("{:?}", [width, column, row]));
+        //     log(&format!("{:?}", [*value_1 as u32, (self.data_decoded[idx] as u32), (self.data_decoded.len() as u32)]));
+
+
+        //     //if row % y_modifier == 0 && column % x_modifier == 0 {
+        //     let chara: char;
+        //     chara = filters::grayscale_basic_test(*value_1 as f64, true);
+        //     new_result.push(chara);
+        //     //}
+
+        //     if value == 0.0 {
+        //         return new_result.push_str("\n");
+        //     }
+        //     column += 1;
+        // }
+
+        new_result.push('a');
+
+        let mut result_final = String::from("");
+        let mut last_char: char = ' ';
+
+        // for c in new_result.chars() {
+        //     if !(c == last_char && c == '\n') {
+        //         result_final.push(c);
+        //     }
+        //     last_char = c;
+        // }
+
+        log("based result?:");
+        log(&new_result[..]);
+        //self.result = new_result;
+        return new_result;
+    }
+
+    pub fn new(data_raw: Vec<u8>) -> Converter {
         let result = String::from("");
         let png = parser::PngImage::new_empty();
 
+        let data_decoded = Vec::<u8>::new();
+
         let mut first_eight: [u8; 8] = [0,0,0,0,0,0,0,0];
         for i in 0..8 {
-            first_eight[i] = data[i];
+            first_eight[i] = data_raw[i];
         }
         
         
@@ -72,7 +171,8 @@ impl Converter {
         }
         return Converter {
             result,
-            data,
+            data_raw,
+            data_decoded,
             png: png,
         };
     }
@@ -81,34 +181,61 @@ impl Converter {
         let index = self.find_pattern(parser::IHDR.to_vec());
         let mut ihdr_bytes: [u8; 13] = [0; 13];
         for i in 0..13 {
-            ihdr_bytes[i] = self.data[i+index];
+            ihdr_bytes[i] = self.data_raw[i+index];
         }
         log(&format!("{:X?}", ihdr_bytes)[..]);
         let ihdr = parser::IhdrChunk::build(ihdr_bytes);
         self.png.ihdr = ihdr;
     }
 
-    pub fn find_idat(&self) {
+    pub fn populate_idat(&mut self) {
         let index = self.find_pattern(parser::IDAT.to_vec());
         log(&format!("found idat index: {:X?}", index)[..]);
 
-        let slice = &self.data[(index-4)..(index)];
-        log(&format!("length bytes: {:X?} Idat: {:X}", slice, self.data[index]));
+        let slice = &self.data_raw[(index-8)..(index-4)];
+        log(&format!("length bytes: {:X?} Idat: {:X}", slice, self.data_raw[index]));
 
         let mut idat_bytes: Vec<u8> = Vec::<u8>::new();
-        let length: u32 = as_u32_be(slice);
+        let length_1: u32 = as_u32_be(slice);
+        let length: u32 = if length_1 < self.data_raw.len() as u32 {length_1} else {10};
         log(&format!("found idat length: {}", length)[..]);
 
         let mut count = 0;
         loop {
             count += 1;
-            idat_bytes.push(self.data[count+index]);
+            idat_bytes.push(self.data_raw[count+index]);
             if count == length as usize {
                 log("pushed to bytes");
                 break;
             }
         }
-        log(&format!("{:X?}", idat_bytes)[..]);
+        log(&format!("bytes {:X?}", idat_bytes)[..]);
+        self.data_raw = idat_bytes;
+    }
+
+    pub fn decode_idat(&mut self) {
+        //let decoded: Vec<u8> = inflate_bytes_zlib(&self.data_raw).unwrap();
+        let data_1 = self.data_raw.clone();
+        let data = &data_1[1..];
+        let mut decoded = Vec::<u8>::new();
+
+        let mut decoder = inflate::InflateWriter::new(Vec::new());
+        match decoder.write(&data) {
+            Ok(x) => log("decoder decoded"),
+            Err(e) => log(&format!("decoder failed {}", e)[..])
+        }
+        match decoder.finish() {
+            Ok(x) => decoded = x,
+            Err(_) => decoded = vec![0x49]
+        }
+
+        log("Decoded Idat");
+        log(&format!("bytes: {:X?}", &decoded)[..]);
+        
+
+        self.data_decoded = decoded.clone();
+
+        log(&format!("bytes: {:X?}", &self.data_decoded)[..]);
     }
 
     pub fn display_head(&self) {
@@ -120,7 +247,7 @@ impl Converter {
         log(&format!("compression: {:X?}", self.png.ihdr.compression)[..]);
         log(&format!("filter: {:X?}", self.png.ihdr.filter)[..]);
         log(&format!("interlaced: {:X?}", self.png.ihdr.interlaced)[..]);
-        log(&format!("total byte length: {:X?}", self.data.len()));
+        log(&format!("total byte length: {:X?}", self.data_raw.len()));
     }
 
     pub fn test_pattern(&self) {
@@ -130,10 +257,10 @@ impl Converter {
     pub fn find_pattern(&self, pattern: Vec<u8>) -> usize {
         let mut index: usize = 0;
 
-        for (idx, byte) in self.data.iter().enumerate() {
+        for (idx, byte) in self.data_raw.iter().enumerate() {
             let mut four: [u8; 4] = [0; 4];
             for i in 0..4 {
-                four[i] = self.data[i + idx];
+                four[i] = self.data_raw[i + idx];
             }
 
             if four.to_vec() == pattern {

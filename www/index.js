@@ -1,5 +1,6 @@
 import * as wasm from "../image-to-ascii-rukarangi/pkg";
 
+wasm.init_panic()
 wasm.greet()
 
 let data = new Uint8Array([21,31])
@@ -27,14 +28,19 @@ function readFile(input) {
         let converter = wasm.Converter.new(newData)
 
         let string = new TextDecoder("utf-8").decode(newData)
-        display.textContent = string
+        display.textContent = "Image Read"
         //console.log(string)
 
+        
         converter.test_pattern()
         converter.populate_ihdr()
         converter.display_head()
-        converter.find_idat()
-
+        converter.populate_idat()
+        converter.decode_idat()
+        
+        let result = converter.filter(3,6)
+        console.log(result)
+        display.textContent = result
     }
 
     reader.onerror = () => {
