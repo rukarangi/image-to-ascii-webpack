@@ -38,9 +38,9 @@ function readFile(input) {
         converter.populate_idat()
         converter.decode_idat()
         
-        //let result = converter.filter(1,1)
+        let result = converter.filter(1,1)
         //console.log(result)
-        //display.textContent = result
+        display.textContent = result
     }
 
     reader.onerror = () => {

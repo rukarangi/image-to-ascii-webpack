@@ -1,8 +1,8 @@
 extern crate console_error_panic_hook;
 
 mod utils;
-mod filters;
 mod parser;
+mod handler;
 
 #[cfg(test)]
 mod tests {
@@ -84,74 +84,11 @@ pub struct Converter {
 impl Converter {
     pub fn filter(&mut self, y_modifier: u32, x_modifier: u32) -> String {
 
-        log(&format!("{:X?}", self.data_decoded.len()));
+        let pixel_type = handler::Pixel_type::Rgba;
 
-        let mut new_result = String::from("");
+        let result = handler::handle(self.data_decoded.clone(), pixel_type);
 
-        let mut last: u8 = 0;
-        let mut column: u32 = 0;
-        let width = as_u32_be(&self.png.ihdr.width[..]);
-        let mut row: u32 = 0;
-
-        for (idx, value) in self.data_decoded.iter().enumerate() {
-            if last != *value {
-                //log(&format!("{:?}", value));
-            }
-            last = *value;
-            if column % x_modifier == 0 && row % y_modifier == 0 {
-                let chara = filters::grayscale_basic_test(*value as f64, true);
-                new_result.push(chara);
-            }
-            column += 1;
-            if column >= width - 2 {
-                new_result.push_str("\n");
-                column = 0;
-                row += 1;
-                log("new line");
-            }
-        }
-
-        // let mut row = 1;
-        // let mut column = 1;
-        
-
-        // for (idx, value_1) in self.data_decoded.iter().enumerate() {
-        //     let value: f64 = *value_1 as f64;
-            
-            
-        //     row = idx as u32 - ((column as f64 / width as f64).floor() as u32 * width);
-        //     log(&format!("{:?}", [width, column, row]));
-        //     log(&format!("{:?}", [*value_1 as u32, (self.data_decoded[idx] as u32), (self.data_decoded.len() as u32)]));
-
-
-        //     //if row % y_modifier == 0 && column % x_modifier == 0 {
-        //     let chara: char;
-        //     chara = filters::grayscale_basic_test(*value_1 as f64, true);
-        //     new_result.push(chara);
-        //     //}
-
-        //     if value == 0.0 {
-        //         return new_result.push_str("\n");
-        //     }
-        //     column += 1;
-        // }
-
-        new_result.push('a');
-
-        let mut result_final = String::from("");
-        let mut last_char: char = ' ';
-
-        // for c in new_result.chars() {
-        //     if !(c == last_char && c == '\n') {
-        //         result_final.push(c);
-        //     }
-        //     last_char = c;
-        // }
-
-        log("based result?:");
-        //log(&new_sresult[..]);
-        //self.result = new_result;
-        return new_result;
+        return result;
     }
 
     pub fn new(data_raw: Vec<u8>) -> Converter {
