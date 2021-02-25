@@ -90,6 +90,7 @@ impl Converter {
 
         let mut last: u8 = 0;
         let mut column: u32 = 0;
+        let width = as_u32_be(&self.png.ihdr.width[..]);
         let mut row: u32 = 0;
 
         for (idx, value) in self.data_decoded.iter().enumerate() {
@@ -102,16 +103,17 @@ impl Converter {
                 new_result.push(chara);
             }
             column += 1;
-            if *value == 0 {
+            if column >= width - 2 {
                 new_result.push_str("\n");
                 column = 0;
                 row += 1;
+                log("new line");
             }
         }
 
         // let mut row = 1;
         // let mut column = 1;
-        // let width = as_u32_be(&self.png.ihdr.width[..]);
+        
 
         // for (idx, value_1) in self.data_decoded.iter().enumerate() {
         //     let value: f64 = *value_1 as f64;
@@ -147,7 +149,7 @@ impl Converter {
         // }
 
         log("based result?:");
-        log(&new_result[..]);
+        //log(&new_sresult[..]);
         //self.result = new_result;
         return new_result;
     }
@@ -230,7 +232,7 @@ impl Converter {
         }
 
         log("Decoded Idat");
-        log(&format!("bytes: {:X?}", &decoded)[..]);
+        //log(&format!("bytes: {:X?}", &decoded)[..]);
         
 
         self.data_decoded = decoded.clone();
@@ -240,8 +242,8 @@ impl Converter {
 
     pub fn display_head(&self) {
         log(&format!("Head Information:", )[..]);
-        log(&format!("width: {:X?}", self.png.ihdr.width)[..]);
-        log(&format!("height: {:X?}", self.png.ihdr.height)[..]);
+        log(&format!("width: {:X?}", as_u32_be(&self.png.ihdr.width))[..]);
+        log(&format!("height: {:X?}", as_u32_be(&self.png.ihdr.height))[..]);
         log(&format!("depth: {:X?}", self.png.ihdr.depth)[..]);
         log(&format!("color_type: {:X?}", self.png.ihdr.color_type)[..]);
         log(&format!("compression: {:X?}", self.png.ihdr.compression)[..]);
