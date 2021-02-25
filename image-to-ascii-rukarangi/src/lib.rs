@@ -84,9 +84,9 @@ pub struct Converter {
 impl Converter {
     pub fn filter(&mut self, y_modifier: u32, x_modifier: u32) -> String {
 
-        let pixel_type = handler::Pixel_type::Rgba;
+        let pixel_type = handler::Pixel_type::Gray;
 
-        let result = handler::handle(self.data_decoded.clone(), pixel_type);
+        let result = handler::handle(self.data_decoded.clone(), pixel_type, y_modifier, x_modifier);
 
         return result;
     }

@@ -38,8 +38,9 @@ function readFile(input) {
         converter.populate_idat()
         converter.decode_idat()
         
-        let result = converter.filter(1,1)
+        let result = converter.filter(1,10)
         //console.log(result)
+        //result = result.replace(/(?:\r\n|\r|\n)/g, '<br>');
         display.textContent = result
     }
 

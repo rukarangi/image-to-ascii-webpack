@@ -7,7 +7,7 @@ pub enum Pixel_type {
     Rgba,
 }
 
-pub fn handle(bytes: Vec<u8>, pixel_type: Pixel_type ) -> String {
+pub fn handle(bytes: Vec<u8>, pixel_type: Pixel_type, y_modifier: u32, x_modifier: u32) -> String {
     
     let mut result = String::new();
 
@@ -15,13 +15,38 @@ pub fn handle(bytes: Vec<u8>, pixel_type: Pixel_type ) -> String {
         Pixel_type::Rgba => {
             result = handle_rgba(bytes);
         },
-
+        Pixel_type::Gray => {
+            result = handle_gray(bytes, y_modifier, x_modifier);
+        },
         _ => ()
     }
     
     
     return result;
 }
+
+pub fn handle_gray(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32) -> String {
+    let mut result = String::new();
+
+    let mut row: u32 = 0;
+
+    for (i, b) in bytes.iter().enumerate() {
+        if i == 0 || *b == 0 as u8  { // || row % y_modifier == 0
+            continue;
+        }
+
+        result.push(filters::grayscale_basic((*b as f64, *b as f64, *b as f64), true));
+
+        if i % x_modifier as usize == 0 {
+            result.push_str(&format!("\n")[..]);
+            row += 1;
+        }
+
+    }
+
+    return result;
+
+} 
 
 pub fn handle_rgba(bytes: Vec<u8>) -> String {
     
