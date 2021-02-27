@@ -85,8 +85,11 @@ impl Converter {
     pub fn filter(&mut self, y_modifier: u32, x_modifier: u32) -> String {
 
         let pixel_type = handler::Pixel_type::Gray;
+        let width = as_u32_be(&self.png.ihdr.width);
+        let height = as_u32_be(&self.png.ihdr.height);
 
-        let result = handler::handle(self.data_decoded.clone(), pixel_type, y_modifier, x_modifier);
+
+        let result = handler::handle(self.data_decoded.clone(), pixel_type, y_modifier, x_modifier, width, height);
         return result;
     }
 

@@ -7,16 +7,16 @@ pub enum Pixel_type {
     Rgba,
 }
 
-pub fn handle(bytes: Vec<u8>, pixel_type: Pixel_type, y_modifier: u32, x_modifier: u32) -> String {
+pub fn handle(bytes: Vec<u8>, pixel_type: Pixel_type, y_modifier: u32, x_modifier: u32, width: u32, height: u32) -> String {
     
     let mut result = String::new();
 
     match pixel_type {
         Pixel_type::Rgba => {
-            result = handle_rgba(bytes);
+            result = handle_gray(bytes, y_modifier, x_modifier, width, height);
         },
         Pixel_type::Gray => {
-            result = handle_gray(bytes, y_modifier, x_modifier);
+            result = handle_gray(bytes, y_modifier, x_modifier, width, height);
         },
         _ => ()
     }
@@ -25,23 +25,58 @@ pub fn handle(bytes: Vec<u8>, pixel_type: Pixel_type, y_modifier: u32, x_modifie
     return result;
 }
 
-pub fn handle_gray(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32) -> String {
+pub fn handle_gray(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width: u32, height: u32) -> String {
     let mut result = String::new();
 
     let mut row: u32 = 0;
 
     for (i, b) in bytes.iter().enumerate() {
-        if i == 0 || *b == 0 as u8  { // || row % y_modifier == 0
+        let col_mod = (i - (row * width) as usize) % x_modifier as usize;
+        let row_mod = row % y_modifier;
+        if i == 0 || *b == 0 as u8 || col_mod != 0  { // || row % y_modifier == 0
+            // (i - (row * width) as usize) % x_modifier as usize == 0
             continue;
         }
 
-        result.push(filters::grayscale_basic((*b as f64, *b as f64, *b as f64), true));
+        let mut next_str = String::from("");
 
-        if i % x_modifier as usize == 0 {
-            result.push_str(&format!("\n")[..]);
+        next_str.push(filters::grayscale_basic((*b as f64, *b as f64, *b as f64), true));
+
+        if i % (width + 1) as usize == 0 {
+            next_str.push_str(&format!("\n")[..]);
+            //result.push_str(&format!("{:?}", row_mod)[..]);
+            //result.push_str(&format!("{:?}", (i - (row * width) as usize))[..]);
+
             row += 1;
         }
 
+        if row_mod != 0 {
+            //next_str = String::from("");
+            //continue;
+        }
+
+        //result.push(filters::grayscale_basic_test(*b as f64, true));
+
+
+        if i % (width - 100) as usize == 0 {
+            //result.push_str(&format!("{:?}", (i - (row * width) as usize & x_modifier as usize))[..]);
+        }
+
+        result.push_str(&next_str[..]);
+
+    }
+
+    // --- Re-Format result to not include blank line ---
+    
+    let mut result_final = String::from("");
+    let mut last_char: char = ' ';
+
+    // remove new line only lines
+    for c in result.chars() {
+        if !(c == last_char && c == '\n') {
+            result_final.push(c);
+        }
+        last_char = c;
     }
 
     return result;
