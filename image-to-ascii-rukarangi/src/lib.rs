@@ -84,7 +84,7 @@ pub struct Converter {
 impl Converter {
     pub fn filter(&mut self, y_modifier: u32, x_modifier: u32) -> String {
 
-        let pixel_type = handler::Pixel_type::Gray;
+        let pixel_type = handler::Pixel_type::Rgba;
         let width = as_u32_be(&self.png.ihdr.width);
         let height = as_u32_be(&self.png.ihdr.height);
 

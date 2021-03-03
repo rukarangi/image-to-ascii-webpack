@@ -1,4 +1,5 @@
 pub mod filters;
+use std::fmt;
 
 pub enum Pixel_type {
     Gray,
@@ -7,13 +8,25 @@ pub enum Pixel_type {
     Rgba,
 }
 
+pub struct Pixel {
+    r: u8,
+    g: u8,
+    b: u8
+}
+
+impl fmt::Display for Pixel {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "({}, {}, {})", self.r, self.g, self.b)
+    }
+}
+
 pub fn handle(bytes: Vec<u8>, pixel_type: Pixel_type, y_modifier: u32, x_modifier: u32, width: u32, height: u32) -> String {
     
     let mut result = String::new();
 
     match pixel_type {
         Pixel_type::Rgba => {
-            result = handle_gray(bytes, y_modifier, x_modifier, width, height);
+            result = handle_rgb(bytes, y_modifier, x_modifier, width, height);
         },
         Pixel_type::Gray => {
             result = handle_gray(bytes, y_modifier, x_modifier, width, height);
@@ -25,24 +38,51 @@ pub fn handle(bytes: Vec<u8>, pixel_type: Pixel_type, y_modifier: u32, x_modifie
     return result;
 }
 
-pub fn handle_gray(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width: u32, height: u32) -> String {
+pub fn rgb_maker(bytes: Vec<u8>) -> Vec<Pixel> {
+    let mut pixels: Vec<Pixel> = Vec::new();
+    
+    for (i, b) in bytes.iter().enumerate() {
+        if i % 4 as usize != 0 || i == 0 {
+            continue;
+        }
+
+        let new_rgb: Pixel = Pixel {
+            r: bytes[i - 2], 
+            g: bytes[i - 1], 
+            b: bytes[i]
+        };
+
+        pixels.push(new_rgb);
+
+    }
+
+    return pixels;
+}
+
+pub fn handle_gray(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width_1: u32, height: u32) -> String {
     let mut result = String::new();
 
-    let mut row: u32 = 0;
+    let width = width_1 + 1;
+
+    let mut row: u32 = 1;
+
+    let mut rows: Vec<Vec<u8>>;
+    let mut row_: Vec<u8> = vec![0;width as usize];
 
     for (i, b) in bytes.iter().enumerate() {
         let col_mod = (i - (row * width) as usize) % x_modifier as usize;
         let row_mod = row % y_modifier;
-        if i == 0 || *b == 0 as u8 || col_mod != 0  { // || row % y_modifier == 0
+        if col_mod != 0 { //  i == 0 || || row % y_modifier == 0 || *b == 0 as u8 
             // (i - (row * width) as usize) % x_modifier as usize == 0
             continue;
         }
 
         let mut next_str = String::from("");
 
-        next_str.push(filters::grayscale_basic((*b as f64, *b as f64, *b as f64), true));
+        //next_str.push(filters::grayscale_basic((*b as f64, *b as f64, *b as f64), true));
+        //next_str.push_str(&format!("\n")[..]);
 
-        if i % (width + 1) as usize == 0 {
+        if i % (width) as usize == 0 {
             next_str.push_str(&format!("\n")[..]);
             //result.push_str(&format!("{:?}", row_mod)[..]);
             //result.push_str(&format!("{:?}", (i - (row * width) as usize))[..]);
@@ -50,12 +90,18 @@ pub fn handle_gray(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width: u32,
             row += 1;
         }
 
-        if row_mod != 0 {
+        if row_mod != 0 && row > 0 {
             //next_str = String::from("");
-            //continue;
+            result.push_str(&next_str[..]);
+            continue;
         }
 
-        //result.push(filters::grayscale_basic_test(*b as f64, true));
+        //next_str.push_str(&format!("{:?} ", (i % (width as usize)))[..]);
+
+        result.push_str(&format!(" ({:X?}, {:?}, {:?}, ", *b, i, row)[..]);
+        result.push(filters::grayscale_basic_test(*b as f64, true));
+        result.push(')');
+
 
 
         if i % (width - 100) as usize == 0 {
@@ -79,9 +125,40 @@ pub fn handle_gray(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width: u32,
         last_char = c;
     }
 
-    return result;
+    return result_final;
 
-} 
+}
+
+pub fn handle_rgb(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width_1: u32, height: u32) -> String {
+    let mut result = String::new();
+
+    let width = width_1 + 1;
+
+
+
+
+    let mut rgbs: Vec<(u8, u8, u8)> = vec![(0,0,0)];
+
+    for (i, b) in bytes.iter().enumerate(){
+        if i % 3 != 0 {
+            continue;
+        }
+
+        let mut new_rgb = (*b, bytes[i + 1], bytes[i + 2]);
+        rgbs.push(new_rgb);
+    }
+
+    let pixels = rgb_maker(bytes);
+    let mut result_1 = String::new();
+
+    for p in pixels {
+        result_1.push_str(&format!(" {:}", p)[..]);
+    }
+
+
+    return result_1;
+
+}
 
 pub fn handle_rgba(bytes: Vec<u8>) -> String {
     
