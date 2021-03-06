@@ -42,7 +42,7 @@ fn filter(scalar: f64, characters: Vec<char>) -> char {
     return character;
 }
 
-pub fn grayscale_basic(rgb: (f64, f64, f64), reverse: bool) -> char {
+pub fn grayscale_basic(rgb: (f64, f64, f64, f64), reverse: bool) -> char {
     let grayscale_default: Vec<char> = vec![' ','.',':','-','=','+','*','#','%','@'];
     let grayscale: Vec<char>;
 

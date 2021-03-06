@@ -14,9 +14,22 @@ pub struct Pixel {
     b: u8
 }
 
+pub struct PixelA {
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8
+}
+
 impl fmt::Display for Pixel {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "({}, {}, {})", self.r, self.g, self.b)
+    }
+}
+
+impl fmt::Display for PixelA {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "({}, {}, {}, {})", self.r, self.g, self.b, self.a)
     }
 }
 
@@ -50,6 +63,43 @@ pub fn rgb_maker(bytes: Vec<u8>) -> Vec<Pixel> {
             r: bytes[i - 2], 
             g: bytes[i - 1], 
             b: bytes[i]
+        };
+
+        pixels.push(new_rgb);
+
+    }
+
+    return pixels;
+}
+
+pub fn remove_blank(input: String) -> String {
+    let mut result = String::from("");
+    let mut last_char: char = ' ';
+
+    // remove new line only lines
+    for c in input.chars() {
+        if !(c == last_char && c == '\n') {
+            result.push(c);
+        }
+        last_char = c;
+    }
+
+    return result;
+}
+
+pub fn rgba_maker(bytes: Vec<u8>) -> Vec<PixelA> {
+    let mut pixels: Vec<PixelA> = Vec::new();
+    
+    for (i, b) in bytes.iter().enumerate() {
+        if i % 4 as usize != 0 || i == 0 {
+            continue;
+        }
+
+        let new_rgb: PixelA = PixelA {
+            r: bytes[i - 3], 
+            g: bytes[i - 2], 
+            b: bytes[i - 1],
+            a: bytes[i]
         };
 
         pixels.push(new_rgb);
@@ -111,52 +161,56 @@ pub fn handle_gray(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width_1: u3
         result.push_str(&next_str[..]);
 
     }
-
-    // --- Re-Format result to not include blank line ---
     
-    let mut result_final = String::from("");
-    let mut last_char: char = ' ';
-
-    // remove new line only lines
-    for c in result.chars() {
-        if !(c == last_char && c == '\n') {
-            result_final.push(c);
-        }
-        last_char = c;
-    }
+    let mut result_final = remove_blank(result);
 
     return result_final;
 
 }
 
 pub fn handle_rgb(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width_1: u32, height: u32) -> String {
+    let pixels = rgba_maker(bytes);
+    let mut result_1 = String::new();
     let mut result = String::new();
 
-    let width = width_1 + 1;
+    let width = width_1 ;// + 1) * 1;
 
+    let mut row: u32 = 1;
 
+    // for p in pixels.clone() {
+    //     result_1.push_str(&format!(" {:}", p)[..]);
+    // }
 
+    for (i, p) in pixels.iter().enumerate() {
+        let col_mod = (i - (row * width) as usize) % x_modifier as usize;
+        let row_mod = row % y_modifier;
 
-    let mut rgbs: Vec<(u8, u8, u8)> = vec![(0,0,0)];
-
-    for (i, b) in bytes.iter().enumerate(){
-        if i % 3 != 0 {
+        if col_mod !=0 {
             continue;
         }
 
-        let mut new_rgb = (*b, bytes[i + 1], bytes[i + 2]);
-        rgbs.push(new_rgb);
+        let mut next_str = String::from("");
+
+        if i % (width) as usize == 0 {
+            next_str.push_str(&format!("\n")[..]);
+            row += 1;
+        }
+        
+        if row_mod != 0 && row > 0 {
+            //next_str = String::from("");
+            result.push_str(&next_str[..]);
+            continue;
+        }
+
+        let data = (p.r as f64, p.g as f64, p.b as f64, p.a as f64);
+        //result.push_str(&format!(" ({:?}, {:?}, ", i, row)[..]);
+        result.push(filters::grayscale_basic(data, true));
+        //result.push(')');
     }
 
-    let pixels = rgb_maker(bytes);
-    let mut result_1 = String::new();
+    let mut result_final = remove_blank(result);
 
-    for p in pixels {
-        result_1.push_str(&format!(" {:}", p)[..]);
-    }
-
-
-    return result_1;
+    return result_final;
 
 }
 
@@ -180,7 +234,7 @@ pub fn handle_rgba(bytes: Vec<u8>) -> String {
 
         if pos == 3 {
             pos = 0;
-            result.push(filters::grayscale_basic((temp[0], temp[1], temp[2]), true));
+            result.push(filters::grayscale_basic((temp[0], temp[1], temp[2], 0 as f64), true));
             
             result_test.push_str(&format!("{:?}", (temp[0], temp[1], temp[2]))[..]);
             temp = vec![];
