@@ -87,23 +87,53 @@ pub fn remove_blank(input: String) -> String {
     return result;
 }
 
-pub fn rgba_maker(bytes: Vec<u8>) -> Vec<PixelA> {
+pub fn rgba_maker(bytes: Vec<u8>, width: u32) -> Vec<PixelA> {
     let mut pixels: Vec<PixelA> = Vec::new();
-    
-    for (i, b) in bytes.iter().enumerate() {
-        if i % 4 as usize != 0 || i == 0 {
-            continue;
+    let mut offset = 0;
+
+    let mut i_: usize = 0;
+    // for b in bytes.iter() {
+
+    //     if i % width as usize == 0 && i < 10000 {
+    //         i += 2;
+    //     } else if i < 10000 { 
+    //         i += 1;
+    //     } 
+
+    //     if i % 4 as usize != 0 || i == 1 {
+    //         continue;
+    //     }
+
+    //     let new_rgb: PixelA = PixelA {
+    //         r: bytes[i - 3], 
+    //         g: bytes[i - 2], 
+    //         b: bytes[i - 1],
+    //         a: (i % 256) as u8
+    //     };
+
+    //     pixels.push(new_rgb);
+
+    // }
+
+    let mut new_bytes: Vec<u8> = vec![];
+
+    for (i,b) in bytes.iter().enumerate() {
+        if i % (width * 4) as usize != 0 {
+            new_bytes.push(*b);
         }
+    }
 
-        let new_rgb: PixelA = PixelA {
-            r: bytes[i - 3], 
-            g: bytes[i - 2], 
-            b: bytes[i - 1],
-            a: bytes[i]
-        };
+    for (i, b) in new_bytes.iter().enumerate() {
+        if i % 4 == 0 && i != 0 {
+            let new_rgb: PixelA = PixelA {
+                r: new_bytes[i - 4], 
+                g: new_bytes[i - 3], 
+                b: new_bytes[i - 2],
+                a: new_bytes[i - 1]
+            };
 
-        pixels.push(new_rgb);
-
+            pixels.push(new_rgb);
+        }
     }
 
     return pixels;
@@ -169,7 +199,7 @@ pub fn handle_gray(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width_1: u3
 }
 
 pub fn handle_rgb(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width_1: u32, height: u32) -> String {
-    let pixels = rgba_maker(bytes);
+    let pixels = rgba_maker(bytes, width_1);
     let mut result_1 = String::new();
     let mut result = String::new();
 
@@ -177,9 +207,12 @@ pub fn handle_rgb(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width_1: u32
 
     let mut row: u32 = 1;
 
-    // for p in pixels.clone() {
-    //     result_1.push_str(&format!(" {:}", p)[..]);
-    // }
+    for (i, p) in pixels.iter().enumerate() {
+        result_1.push_str(&format!(" {:}", p)[..]);
+        if i % width as usize == 0 {
+            result_1.push_str(&format!("\n"));
+        }
+    }
 
     for (i, p) in pixels.iter().enumerate() {
         let col_mod = (i - (row * width) as usize) % x_modifier as usize;
@@ -206,6 +239,7 @@ pub fn handle_rgb(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width_1: u32
         //result.push_str(&format!(" ({:?}, {:?}, ", i, row)[..]);
         result.push(filters::grayscale_basic(data, true));
         //result.push(')');
+        //result.push_str(&format!(" ({:X?}, {:X?}, {:X?})", p.r, p.g, p.b)[..]);
     }
 
     let mut result_final = remove_blank(result);
