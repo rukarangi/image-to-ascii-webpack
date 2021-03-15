@@ -17,6 +17,8 @@ use inflate::inflate_bytes_zlib;
 use std::io::Write;
 use std::str::from_utf8;
 use std::panic;
+use itertools::concat;
+use image::codecs::png;
 
 
 
@@ -119,7 +121,7 @@ impl Converter {
     }
 
     pub fn populate_ihdr(&mut self) {
-        let index = self.find_pattern(parser::IHDR.to_vec());
+        let index = self.find_pattern(0 as usize, parser::IHDR.to_vec());
         let mut ihdr_bytes: [u8; 13] = [0; 13];
         for i in 0..13 {
             ihdr_bytes[i] = self.data_raw[i+index];
@@ -129,41 +131,65 @@ impl Converter {
         self.png.ihdr = ihdr;
     }
 
-    pub fn populate_idat(&mut self) {
-        let index = self.find_pattern(parser::IDAT.to_vec());
-        log(&format!("found idat index: {:X?}", index)[..]);
+    pub fn find_idats(&self) -> Vec<usize> {
+        let mut result: Vec<usize> = Vec::new();
 
-        let slice = &self.data_raw[(index-8)..(index-4)];
-        log(&format!("length bytes: {:X?} Idat: {:X}", slice, self.data_raw[index]));
+        let pattern = parser::IDAT.to_vec();
 
-        let mut idat_bytes: Vec<u8> = Vec::<u8>::new();
-        let length_1: u32 = as_u32_be(slice);
-        let length: u32 = if length_1 < self.data_raw.len() as u32 {length_1} else {10};
-        log(&format!("found idat length: {}", length)[..]);
-
-        let mut count = 0;
-        loop {
-            count += 1;
-            idat_bytes.push(self.data_raw[count+index]);
-            if count == length as usize {
-                log("pushed to bytes");
+        for (idx, byte) in self.data_raw.iter().enumerate() {
+            if idx + 4 >= self.data_raw.len() {
                 break;
             }
+
+            let mut four: [u8; 4] = [0; 4];
+            for i in 0..4 {
+                four[i] = self.data_raw[i + idx];
+            }
+    
+            if four.to_vec() == pattern {
+                log(&format!("{}", idx));
+                result.push(idx + 4);
+            }
         }
-        log(&format!("bytes {:X?}", idat_bytes)[..]);
-        self.data_raw = idat_bytes;
+        log(&format!("Idat indexs {:X?}", result)[..]);
+        return result;
+    }
+
+    pub fn get_data(&self, idx: usize) -> Vec<u8> {
+        let length_bytes = &self.data_raw[(idx-8)..(idx-4)];
+        let length: usize = as_u32_be(length_bytes) as usize;
+        log(&format!("Length Bytes {:X?}", length_bytes)[..]);
+        log(&format!("length {:?}", length)[..]);
+
+        let data: Vec<u8> = (&self.data_raw[(idx)..(idx+length)]).to_vec();
+        log(&format!("data length {:X?}", data.len())[..]);
+        return data;
+    }
+
+    pub fn populate_idat(&mut self) {
+        
+        let idats: Vec<usize> = self.find_idats();
+        let dats: Vec<Vec<u8>> = idats.iter().map(|x| self.get_data(*x)).collect();
+        let dat: Vec<u8> = concat(dats);
+
+        log(&format!("Number of Idats: {:?}", idats.len()));
+        log(&format!("bytes {:X?}", dat)[..]);
+        self.data_raw = dat;
     }
 
     pub fn decode_idat(&mut self) {
-        //let decoded: Vec<u8> = inflate_bytes_zlib(&self.data_raw).unwrap();
         let data_1 = self.data_raw.clone();
-        let data = &data_1[1..];
+        let data = &data_1[2..]; 
+        // THIS is a weird zlib peculiarity it does not like the first two bytes
         let mut decoded = Vec::<u8>::new();
 
         let mut decoder = inflate::InflateWriter::new(Vec::new());
         match decoder.write(&data) {
             Ok(x) => log("decoder decoded"),
-            Err(e) => log(&format!("decoder failed {}", e)[..])
+            Err(e) => {
+                log(&format!("decoder failed {}", e)[..]);
+                log(&format!("bytes {:X?}", data)[..]);
+            }
         }
         match decoder.finish() {
             Ok(x) => decoded = x,
@@ -192,13 +218,17 @@ impl Converter {
     }
 
     pub fn test_pattern(&self) {
-        self.find_pattern(parser::IHDR.to_vec());
+        self.find_pattern(0 as usize, parser::IHDR.to_vec());
     }
 
-    pub fn find_pattern(&self, pattern: Vec<u8>) -> usize {
-        let mut index: usize = 0;
+    pub fn find_pattern(&self, offest: usize, pattern: Vec<u8>) -> usize {
+        let mut index: usize = 0; // default will be seen as not found
 
         for (idx, byte) in self.data_raw.iter().enumerate() {
+            if idx < offest || (idx + 4) >= self.data_raw.len() {
+                continue;
+            }
+
             let mut four: [u8; 4] = [0; 4];
             for i in 0..4 {
                 four[i] = self.data_raw[i + idx];
@@ -212,7 +242,7 @@ impl Converter {
         }
         
         //log(&format!("{}", index)[..]);
-        return index;
+        return index; // will be zero if not found
     }
 }
 

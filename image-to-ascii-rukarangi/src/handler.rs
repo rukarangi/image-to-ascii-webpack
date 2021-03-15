@@ -178,9 +178,9 @@ pub fn handle_gray(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width_1: u3
 
         //next_str.push_str(&format!("{:?} ", (i % (width as usize)))[..]);
 
-        result.push_str(&format!(" ({:X?}, {:?}, {:?}, ", *b, i, row)[..]);
+        //result.push_str(&format!(" ({:X?}, {:?}, {:?}, ", *b, i, row)[..]);
         result.push(filters::grayscale_basic_test(*b as f64, true));
-        result.push(')');
+        //result.push(')');
 
 
 
