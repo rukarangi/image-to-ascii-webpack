@@ -1,5 +1,6 @@
 pub mod filters;
 use std::fmt;
+use std::convert::From;
 
 pub enum Pixel_type {
     Gray,
@@ -14,11 +15,29 @@ pub struct Pixel {
     b: u8
 }
 
+#[derive(Copy, Clone)]
 pub struct PixelA {
     r: u8,
     g: u8,
     b: u8,
     a: u8
+}
+
+impl From<Vec<u8>> for PixelA {
+    fn from(v: Vec<u8>) -> PixelA {
+        PixelA { 
+            r: v[0],
+            g: v[1],
+            b: v[2],
+            a: v[3]
+        }
+    }
+}
+
+impl From<PixelA> for Vec<u8> {
+    fn from(p: PixelA) -> Vec<u8> {
+        vec![p.r, p.g, p.b, p.a]
+    }
 }
 
 impl fmt::Display for Pixel {
@@ -92,30 +111,23 @@ pub fn rgba_maker(bytes: Vec<u8>, width: u32) -> Vec<PixelA> {
     let mut offset = 0;
 
     let mut i_: usize = 0;
-    // for b in bytes.iter() {
-
-    //     if i % width as usize == 0 && i < 10000 {
-    //         i += 2;
-    //     } else if i < 10000 { 
-    //         i += 1;
-    //     } 
-
-    //     if i % 4 as usize != 0 || i == 1 {
-    //         continue;
-    //     }
-
-    //     let new_rgb: PixelA = PixelA {
-    //         r: bytes[i - 3], 
-    //         g: bytes[i - 2], 
-    //         b: bytes[i - 1],
-    //         a: (i % 256) as u8
-    //     };
-
-    //     pixels.push(new_rgb);
-
-    // }
 
     let mut new_bytes: Vec<u8> = vec![];
+
+    let mut filter = bytes[0];
+    let white = vec![
+        (0xFF), 
+        (0xFF), 
+        (0xFF),
+        (0xFF)
+    ];
+    let white_pixel: PixelA = PixelA::from(white);
+
+    pixels.push(white_pixel);
+    pixels.push(white_pixel);
+    pixels.push(white_pixel);
+    pixels.push(white_pixel);
+
 
     for (i,b) in bytes.iter().enumerate() {
         if i % (width * 4) as usize != 0 {
@@ -125,18 +137,47 @@ pub fn rgba_maker(bytes: Vec<u8>, width: u32) -> Vec<PixelA> {
 
     for (i, b) in new_bytes.iter().enumerate() {
         if i % 4 == 0 && i != 0 {
-            let new_rgb: PixelA = PixelA {
-                r: new_bytes[i - 4], 
-                g: new_bytes[i - 3], 
-                b: new_bytes[i - 2],
-                a: new_bytes[i - 1]
-            };
+            let new_rgb: Vec<u8> = vec![
+                (new_bytes[i - 4]), 
+                (new_bytes[i - 3]), 
+                (new_bytes[i - 2]),
+                (new_bytes[i - 1])
+            ];
 
-            pixels.push(new_rgb);
+            let mut last_rgb: Vec<u8> = Vec::new();
+
+            if i == 9 {
+                last_rgb = Vec::<u8>::from(pixels[i / new_bytes.len()]);
+
+                // Trying all around to tget sub filter to work!!! ARGH
+            } else {
+                last_rgb = vec![
+                    (0xFF), 
+                    (0xFF), 
+                    (0xFF),
+                    (0xFF)
+                ];
+            }
+
+            if filter == 0 {
+                pixels.push(PixelA::from(new_rgb));
+            } else {
+                pixels.push(PixelA::from(sub_filter(4, last_rgb, new_rgb)));
+            }
         }
     }
 
     return pixels;
+}
+
+pub fn sub_filter(pixel_len: u32, last_pixel: Vec<u8>, current_pixel: Vec<u8>) -> Vec<u8> {
+    let mut new_pixel: Vec<u8> = Vec::<u8>::new();
+
+    for i in 0..pixel_len {
+        new_pixel.push(last_pixel[i as usize] - current_pixel[i as usize]);
+    }
+
+    return new_pixel;
 }
 
 pub fn handle_gray(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width_1: u32, height: u32) -> String {
@@ -246,117 +287,4 @@ pub fn handle_rgb(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width_1: u32
 
     return result_final;
 
-}
-
-pub fn handle_rgba(bytes: Vec<u8>) -> String {
-    
-    let mut result = String::new();
-    let mut result_test = String::new();
-    
-    let mut pixels: Vec<(f64, f64, f64)>;
-
-    let mut test: bool = true;
-
-    let mut pos = 0;
-    let mut next_tup: (f64, f64, f64);
-    let mut temp: Vec<f64> = Vec::new();
-    for (i, b) in bytes.iter().enumerate() {
-        
-        if i == 0 { //|| i % 4 == 0
-            continue;
-        }
-
-        if pos == 3 {
-            pos = 0;
-            result.push(filters::grayscale_basic((temp[0], temp[1], temp[2], 0 as f64), true));
-            
-            result_test.push_str(&format!("{:?}", (temp[0], temp[1], temp[2]))[..]);
-            temp = vec![];
-        }
-
-        if i % 1483 == 0 {
-            result.push_str("\n");
-        }
-
-        // if test && i > 100  {
-        //     test  = false;
-
-        //     result.push_str(&format!("sample: {:?}", temp)[..]);
-
-        // }
-
-        temp.push(*b as f64);
-        pos += 1;
-    }
-    
-    return result_test;
 } 
-
-// log(&format!("{:X?}", self.data_decoded.len()));
-
-        // let mut new_result = String::from("");
-
-        // let mut last: u8 = 0;
-        // let mut column: u32 = 0;
-        // let width = as_u32_be(&self.png.ihdr.width[..]);
-        // let mut row: u32 = 0;
-
-        // for (idx, value) in self.data_decoded.iter().enumerate() {
-        //     if last != *value {
-        //         //log(&format!("{:?}", value));
-        //     }
-        //     last = *value;
-        //     if column % x_modifier == 0 && row % y_modifier == 0 {
-        //         let chara = filters::grayscale_basic_test(*value as f64, true);
-        //         new_result.push(chara);
-        //     }
-        //     column += 1;
-        //     if column >= width - 2 {
-        //         new_result.push_str("\n");
-        //         column = 0;
-        //         row += 1;
-        //         log("new line");
-        //     }
-        // }
-
-        // let mut row = 1;
-        // let mut column = 1;
-        
-
-        // for (idx, value_1) in self.data_decoded.iter().enumerate() {
-        //     let value: f64 = *value_1 as f64;
-            
-            
-        //     row = idx as u32 - ((column as f64 / width as f64).floor() as u32 * width);
-        //     log(&format!("{:?}", [width, column, row]));
-        //     log(&format!("{:?}", [*value_1 as u32, (self.data_decoded[idx] as u32), (self.data_decoded.len() as u32)]));
-
-
-        //     //if row % y_modifier == 0 && column % x_modifier == 0 {
-        //     let chara: char;
-        //     chara = filters::grayscale_basic_test(*value_1 as f64, true);
-        //     new_result.push(chara);
-        //     //}
-
-        //     if value == 0.0 {
-        //         return new_result.push_str("\n");
-        //     }
-        //     column += 1;
-        // }
-
-        // new_result.push('a');
-
-        // let mut result_final = String::from("");
-        // let mut last_char: char = ' ';
-
-        // // for c in new_result.chars() {
-        // //     if !(c == last_char && c == '\n') {
-        // //         result_final.push(c);
-        // //     }
-        // //     last_char = c;
-        // // }
-
-        // log("based result?:");
-        // //log(&new_sresult[..]);
-        // //self.result = new_result;
-        // return new_result;
