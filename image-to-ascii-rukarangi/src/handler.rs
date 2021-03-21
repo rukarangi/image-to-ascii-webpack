@@ -1,6 +1,14 @@
 pub mod filters;
 use std::fmt;
 use std::convert::From;
+use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen]
+extern {
+    //fn alert(s: &str);
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
 
 pub enum Pixel_type {
     Gray,
@@ -123,10 +131,10 @@ pub fn rgba_maker(bytes: Vec<u8>, width: u32) -> Vec<PixelA> {
     ];
     let white_pixel: PixelA = PixelA::from(white);
 
-    pixels.push(white_pixel);
-    pixels.push(white_pixel);
-    pixels.push(white_pixel);
-    pixels.push(white_pixel);
+    // pixels.push(white_pixel);
+    // pixels.push(white_pixel);
+    // pixels.push(white_pixel);
+    // pixels.push(white_pixel);
 
 
     for (i,b) in bytes.iter().enumerate() {
@@ -146,24 +154,24 @@ pub fn rgba_maker(bytes: Vec<u8>, width: u32) -> Vec<PixelA> {
 
             let mut last_rgb: Vec<u8> = Vec::new();
 
-            if i == 9 {
+            if (i % width as usize) > 9 {
                 last_rgb = Vec::<u8>::from(pixels[i / new_bytes.len()]);
 
                 // Trying all around to tget sub filter to work!!! ARGH
             } else {
                 last_rgb = vec![
-                    (0xFF), 
-                    (0xFF), 
-                    (0xFF),
-                    (0xFF)
+                    (0x0), 
+                    (0x0), 
+                    (0x0),
+                    (0x0)
                 ];
             }
 
-            if filter == 0 {
-                pixels.push(PixelA::from(new_rgb));
-            } else {
-                pixels.push(PixelA::from(sub_filter(4, last_rgb, new_rgb)));
-            }
+            // if filter == 0 {
+            //     pixels.push(PixelA::from(new_rgb));
+            // } else {
+            pixels.push(PixelA::from(sub_filter(4, last_rgb, new_rgb)));
+            // }
         }
     }
 
@@ -174,7 +182,7 @@ pub fn sub_filter(pixel_len: u32, last_pixel: Vec<u8>, current_pixel: Vec<u8>) -
     let mut new_pixel: Vec<u8> = Vec::<u8>::new();
 
     for i in 0..pixel_len {
-        new_pixel.push(last_pixel[i as usize] - current_pixel[i as usize]);
+        new_pixel.push(current_pixel[i as usize].wrapping_add(last_pixel[i as usize]));
     }
 
     return new_pixel;
@@ -278,9 +286,9 @@ pub fn handle_rgb(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32, width_1: u32
 
         let data = (p.r as f64, p.g as f64, p.b as f64, p.a as f64);
         //result.push_str(&format!(" ({:?}, {:?}, ", i, row)[..]);
-        result.push(filters::grayscale_basic(data, true));
+        //result.push(filters::grayscale_basic(data, false));
         //result.push(')');
-        //result.push_str(&format!(" ({:X?}, {:X?}, {:X?})", p.r, p.g, p.b)[..]);
+        result.push_str(&format!(" ({:X?}, {:X?}, {:X?})", p.r, p.g, p.b)[..]);
     }
 
     let mut result_final = remove_blank(result);
