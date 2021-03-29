@@ -28,9 +28,10 @@ function converterHandler(buf, xValue, yValue, output) {
     converter.decode_idat()
         
     let result = converter.filter(yValue,xValue)
+    let result_2 = converter.different_methods(yValue,xValue)
     //console.log(result)
     //result = result.replace(/(?:\r\n|\r|\n)/g, '<br>');
-    output.textContent = result
+    output.textContent = result_2
 }
 
 function readFile(input) {

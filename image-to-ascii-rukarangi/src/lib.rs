@@ -80,10 +80,17 @@ pub struct Converter {
     data_raw: Vec<u8>,
     data_decoded: Vec<u8>,
     png: parser::PngImage,
+    original: Vec<u8>,
 }
 
 #[wasm_bindgen]
 impl Converter {
+    pub fn different_methods(&self, y_modifier: u32, x_modifier: u32) -> String {
+        let result = handler::handle_new(&self.original, y_modifier, x_modifier);
+
+        return result;
+    }
+
     pub fn filter(&mut self, y_modifier: u32, x_modifier: u32) -> String {
 
         let pixel_type = handler::Pixel_type::Rgba;
@@ -96,6 +103,7 @@ impl Converter {
     }
 
     pub fn new(data_raw: Vec<u8>) -> Converter {
+        let original = data_raw.clone();
         let result = String::from("");
         let png = parser::PngImage::new_empty();
 
@@ -117,6 +125,7 @@ impl Converter {
             data_raw,
             data_decoded,
             png: png,
+            original,
         };
     }
 

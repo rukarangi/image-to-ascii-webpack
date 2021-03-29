@@ -2,12 +2,85 @@ pub mod filters;
 use std::fmt;
 use std::convert::From;
 use wasm_bindgen::prelude::*;
+use image::Pixel;
 
 #[wasm_bindgen]
 extern {
     //fn alert(s: &str);
     #[wasm_bindgen(js_namespace = console)]
     fn log(s: &str);
+}
+
+pub fn handle_new(bytes: &Vec<u8>, y_modifier: u32, x_modifier: u32) -> String {
+    let mut result = String::new();
+
+    //let img = image::load_from_memory(&bytes[..])?;
+    let img = image::load_from_memory(&bytes[..]);
+    //let rgb = img.to_rgb8();
+    let rgb: u8;
+
+    match img {
+        Ok(r) => {
+            let i = r;
+            let rgbs_ = i.to_rgb8();
+            result = oldhandle(rgbs_, y_modifier, x_modifier);
+        },
+        Err(e) => log(&format!("{}", e)),
+    }
+
+    result
+}
+
+pub fn oldhandle(img: image::RgbImage, y_modifier: u32, x_modifier: u32) -> String {
+    let mut result_before = String::from("");
+
+    let mut row: u32 = 0;
+    let mut column: u32 = 0;
+
+    let mut _count = 0;
+    for (i, pixel) in img.pixels().enumerate() {
+        if i as u32 % img.dimensions().0 == 0 && i > 0 {
+            row += 1;
+        }
+        column = i as u32 - (row * img.dimensions().0);
+        let (x, y) = (column , row);
+        //let average = (r + g + b) / 3.0;
+
+        // run pixel average through filter
+        // only take x_modifier column and y_modifier row
+        if y % y_modifier == 0 && x % x_modifier == 0 {
+            let chara: char;
+            
+
+            let tuplet = pixel.channels4();
+            let rgb = (tuplet.0 as f64, tuplet.1 as f64, tuplet.2 as f64, tuplet.3 as f64);
+
+            chara = filters::grayscale_basic(rgb, true);
+            //println!("{}", filters::grayscale_detailed(average, reverse));
+
+            result_before.push(chara);
+        }
+
+        // end each row with newline
+        if x == img.dimensions().0 -1 {
+            result_before.push_str("\n");
+        }
+    }
+
+    // --- Re-Format result to not include blank line ---
+    
+    let mut result_final = String::from("");
+    let mut last_char: char = ' ';
+
+    // remove new line only lines
+    for c in result_before.chars() {
+        if !(c == last_char && c == '\n') {
+            result_final.push(c);
+        }
+        last_char = c;
+    }
+
+    return result_final;
 }
 
 pub enum Pixel_type {
@@ -17,7 +90,7 @@ pub enum Pixel_type {
     Rgba,
 }
 
-pub struct Pixel {
+pub struct Pixel_ {
     r: u8,
     g: u8,
     b: u8
@@ -48,7 +121,7 @@ impl From<PixelA> for Vec<u8> {
     }
 }
 
-impl fmt::Display for Pixel {
+impl fmt::Display for Pixel_ {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "({}, {}, {})", self.r, self.g, self.b)
     }
@@ -78,15 +151,15 @@ pub fn handle(bytes: Vec<u8>, pixel_type: Pixel_type, y_modifier: u32, x_modifie
     return result;
 }
 
-pub fn rgb_maker(bytes: Vec<u8>) -> Vec<Pixel> {
-    let mut pixels: Vec<Pixel> = Vec::new();
+pub fn rgb_maker(bytes: Vec<u8>) -> Vec<Pixel_> {
+    let mut pixels: Vec<Pixel_> = Vec::new();
     
     for (i, b) in bytes.iter().enumerate() {
         if i % 4 as usize != 0 || i == 0 {
             continue;
         }
 
-        let new_rgb: Pixel = Pixel {
+        let new_rgb: Pixel_ = Pixel_ {
             r: bytes[i - 2], 
             g: bytes[i - 1], 
             b: bytes[i]
