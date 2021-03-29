@@ -2,29 +2,6 @@
 This file contains all the possible effects that can be chosen.
 */
 
-struct Filter {
-    characters: Vec<char>
-}
-
-impl Filter {
-    fn filter_1(&self, scalar: f64) -> char {
-        let mut character: char = ' ';
-    
-        let length = self.characters.len();
-        let difference: f64 = 255.0 / length as f64;
-        for (i, chara) in self.characters.iter().enumerate() {
-            let below: f64 = difference * (i + 1) as f64; 
-    
-            if scalar < below {
-                character = *chara;
-                break;
-            }
-        }
-    
-        return character;
-    }
-}
-
 fn filter(scalar: f64, characters: Vec<char>) -> char {
     let mut character: char = ' ';
 

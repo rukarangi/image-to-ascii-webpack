@@ -15,22 +15,7 @@ let reloader = document.getElementById("reload")
 let currentBuf;
 
 function converterHandler(buf, xValue, yValue, output) {
-    let converter = wasm.Converter.new(buf)
-
-    let string = new TextDecoder("utf-8").decode(buf)
-    output.textContent = "Image Read"
-    //console.log(string)
-        
-    converter.test_pattern()
-    converter.populate_ihdr()
-    converter.display_head()
-    converter.populate_idat()
-    converter.decode_idat()
-        
-    let result = converter.filter(yValue,xValue)
-    let result_2 = converter.different_methods(yValue,xValue)
-    //console.log(result)
-    //result = result.replace(/(?:\r\n|\r|\n)/g, '<br>');
+    let result_2 = wasm.different_methods(buf,yValue,xValue)
     output.textContent = result_2
 }
 
