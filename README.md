@@ -22,3 +22,13 @@ Will require:
 * node
 * rustc/cargo/etc.
 * wasm-pack
+
+### Examples
+
+#### Original
+
+![Original Pyro Image](pyrogaming_original.png)
+
+#### Ascii
+
+![Ascii Pyro Image](pyrogaming.png)
