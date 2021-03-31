@@ -1,5 +1,7 @@
 # This is a working enviroment for wasm and Webpack dev
 
+Recomended x: 5 and y: 10, PNG will probably work, some still broken.
+
 Commit b81430d is currently hosted on https://rukarangi.github.io./
 
 ## Wasm
