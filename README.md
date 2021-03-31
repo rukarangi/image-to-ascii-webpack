@@ -1,5 +1,7 @@
 # This is a working enviroment for wasm and Webpack dev
 
+Commit b81430d is currently hosted on https://rukarangi.github.io./
+
 ## Wasm
 
 To compile rust to wasm run in "image-to-ascii-rukarangi/":
