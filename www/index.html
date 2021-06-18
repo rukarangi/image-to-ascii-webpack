@@ -10,6 +10,23 @@
       body {
         font-family: 'Roboto Mono', monospace;
       }
+      
+      .contentwrapper {
+        display: inline-block;
+        width: 100%;
+        postion: relative;
+      }
+      .contentwrapper::after {
+        padding-top: 100%;
+        display: block;
+        content: '';
+      }
+
+      .content {
+        postion: absolute;
+        top: 0; bottom: 0; left: 0; right: 0;
+        outline: thin dashed green;
+      }
     </style>
   </head>
   <body>
@@ -19,6 +36,8 @@
     <button id="reload">Reload Image</button>
     <input type="number" id="x-axis" min="1" default="2">X modifier</input>
     <input type="number" id="y-axis" min="1" default="2">Y modifier</input>
-    <p style="white-space: pre" id="byte-para"></p>
+    <div class="contentwrapper">
+      <p style="white-space: pre" class="content" id="byte-para"></p>
+    </div>
   </body>
 </html>

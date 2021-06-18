@@ -12,12 +12,14 @@ extern {
 
 pub fn handle_new(bytes: Vec<u8>, y_modifier: u32, x_modifier: u32) -> String {
     let mut result = String::new();
-    let img = image::load_from_memory(&bytes[..]);
+    let img = image::load_from_memory(&bytes[..]); 
+    // this is where I cheat
 
     match img {
         Ok(r) => {
             let i = r;
             let rgbs_ = i.to_rgb8();
+            // Hopefully ill be able to write this step myself
             result = oldhandle(rgbs_, y_modifier, x_modifier);
         },
         Err(e) => log(&format!("{}", e)),
